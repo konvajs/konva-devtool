@@ -1,5 +1,6 @@
 # konva-devtool
-A development and debugging tool for [Konva](https://github.com/konvajs/konva).
+
+Browser devtools extension for debugging [Konva.js](https://github.com/konvajs/konva) applications.
 
 ## usage
 You can load the devtools directory as an unpacked extension.
@@ -7,7 +8,7 @@ You can load the devtools directory as an unpacked extension.
 1. First, you need to clone the project.
 
 ```js
-git clone git@github.com:yinguangyao/konva-devtool.git
+git clone git@github.com:konvajs/konva-devtool.git
 ```
 
 2. At the top right, click More Tools.
