@@ -37,6 +37,7 @@
         "complexity": ["error", 10],
         "semi": [ "error", "always"],
         "camelcase": "warn",
+        "space-before-function-paren": "off",
         "import/order": [
           "warn",
           {

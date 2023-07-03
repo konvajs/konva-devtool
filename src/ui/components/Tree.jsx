@@ -40,12 +40,18 @@ const Tree = (props) => {
   }, [defaultKey]);
 
   useEffect(() => {
+    if (!selectedKey) {
+      return;
+    }
     setTimeout(() => {
       treeRef.current.scrollTo({ key: selectedKey });
     }, 100);
   }, [selectedKey]);
 
   useEffect(() => {
+    if (!selectedKey) {
+      return;
+    }
     // 如果选中了一个图形，那么就直接展示
     actions.showRect(selectedKey, '__select__', 'rgba(29, 57, 196, 0.5)');
     return () => {
@@ -99,7 +105,7 @@ const Tree = (props) => {
       />
       <AttrsDrawer
         hash={selectedKey}
-        onCancel={setSelected}
+        onCancel={() => setSelected('')}
         getAttrs={actions.getAttrs}
         updateAttrs={actions.updateAttrs}
       />

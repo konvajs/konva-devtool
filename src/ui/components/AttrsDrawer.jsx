@@ -26,7 +26,7 @@ const AttrsDrawer = ({ hash, getAttrs, onCancel, updateAttrs }) => {
     }
   }, [getAttrs, hash, onCancel]);
 
-  if (typeof val !== 'object') {
+  if (typeof val !== 'object' || !hash) {
     return null;
   }
 

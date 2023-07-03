@@ -8,7 +8,7 @@ const Devtool = (props) => {
   const { data: initData = [], actions = {} } = props;
   const [selectedKey, setSelectedKey] = useState('');
   const [selectedData, setSelectedData] = useState(initData[0]);
-  const [selectedHash, setSelectedHash] = useState(initData[0].hash);
+  const [selectedHash, setSelectedHash] = useState(initData[0]?.hash ?? '');
   const [data, setData] = useState(initData);
 
   useEffect(() => {

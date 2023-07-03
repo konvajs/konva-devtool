@@ -19,16 +19,18 @@ const executeFuntionInInspectWindow = (func, args) => {
 };
 
 const initCanvasInstances = () => {
-  if (window.__canvas_instances__ && window.__canvas_instances__.length > 0) {
+  if (window.__canvas_instances__?.length > 0) {
     return window.__canvas_instances__;
   }
 
+  const { Konva } = window;
   window.__canvas_instances__ = [];
-  const stages = window.Konva.stages;
+  const stages = Konva.stages;
   stages.forEach(stage => {
     const layers = stage.getLayers();
     layers.forEach(layer => {
-      const originDestroy = window.Konva.Layer.prototype.destroy;
+      const prototype = Konva.Layer.prototype;
+      const originDestroy = prototype.destroy;
       if (layer) {
         window.__canvas_instances__.push(layer);
       }
@@ -49,33 +51,25 @@ const initCanvasInstances = () => {
 
 executeFuntionInInspectWindow(initCanvasInstances);
 
-function getGlobalInstances () {
-  const instances = window.__canvas_instances__;
+function getGlobalInstances() {
   const map = {};
-  const getCanvasRootGroup = (canvas) => {
-    if (canvas.getRoot) {
-      return canvas.getRoot().getChildren();
-    } else if (canvas.getChildren) {
-      return canvas.getChildren();
-    }
-
-    return [];
+  const uuid = () => {
+    const hash = Math.random().toString(16);
+    return hash.slice(-8);
   };
-
-  instances.globalMap = map;
-
-  let konvaInfo = [];
-  function getKonvaInstance (instance, hash) {
+  function getKonvaInstance(instance, hash) {
     const ga = {};
-    if (instance.getChildren && instance.getChildren()) {
+    if (instance?.hasChildren()) {
       // 过滤掉 visible false 的 shape
-      ga.children = instance.getChildren().filter(child => child.visible()).map(function (p) {
+      const children = instance.getChildren().filter(child => child.visible()) ?? [];
+
+      ga.children = children?.map(function (p) {
         return getKonvaInstance(p, hash);
       });
     }
     // 创建一个 hash 值，和 shape 关联起来
     if (!instance.__dev_hash) {
-      ga.hash = Math.random().toString(16).slice(-8);
+      ga.hash = uuid();
       instance.__dev_hash = ga.hash;
     } else {
       ga.hash = instance.__dev_hash;
@@ -88,38 +82,55 @@ function getGlobalInstances () {
     ga.attrs = instance.getAttrs() || instance.attrs;
     return ga;
   }
+  try {
+    const { __canvas_instances__: instances, performance } = window;
+    const getCanvasRootGroup = (canvas) => {
+      if (canvas.getRoot) {
+        return canvas.getRoot().getChildren();
+      } else if (canvas.getChildren) {
+        return canvas.getChildren();
+      }
 
-  if (instances && instances.length) {
-    konvaInfo = instances.map(function (instance) {
-      const hash = instance.hash || Math.random().toString(16).slice(-8);
-      const ga = {
-        type: 'renderer',
-        name: 'renderer',
-        nodeType: 'renderer',
-        hash,
-        children: getCanvasRootGroup(instance).map((e) => getKonvaInstance(e, hash)),
-        memory: window.performance.memory.usedJSHeapSize,
-        fps: window.__fps_value
-      };
-      instance.hash = ga.hash;
-      map[ga.hash] = instance;
-      return ga;
-    });
-  } else {
-    konvaInfo.length = 0;
+      return [];
+    };
+
+    instances.globalMap = map;
+
+    let konvaInfo = [];
+    if (instances?.length) {
+      konvaInfo = instances.map(function (instance) {
+        const hash = instance.hash || uuid();
+        const ga = {
+          type: 'renderer',
+          name: 'renderer',
+          nodeType: 'renderer',
+          hash,
+          children: getCanvasRootGroup(instance).map((e) => getKonvaInstance(e, hash)),
+          memory: performance?.memory?.usedJSHeapSize,
+          fps: window.__fps_value
+        };
+        instance.hash = ga.hash;
+        map[ga.hash] = instance;
+        return ga;
+      });
+    } else {
+      konvaInfo.length = 0;
+    }
+
+    return konvaInfo;
+  } catch (err) {
+    console.log('[Konva DevTool] getGlobalInstances error', err);
   }
-
-  return konvaInfo;
 }
 
 // check if the canvas is alive
-function checkCanvasByHash (hash) {
+function checkCanvasByHash(hash) {
   const isExist = !!window.__canvas_instances__.map((e) => e.hash).includes(hash);
   return isExist;
 }
 
 // create div based on id
-function createBoxUsingId (bbox, id, color) {
+function createBoxUsingId(bbox, id, color) {
   const el = document.createElement('div');
   el.classList.add('konva_devtool_rect');
 
@@ -146,13 +157,13 @@ function createBoxUsingId (bbox, id, color) {
   });
 }
 
-function removeBoxUsingId (id) {
+function removeBoxUsingId(id) {
   if (window[id]) {
     window[id].remove();
   }
 }
 
-function removeAllBox () {
+function removeAllBox() {
   const elements = document.getElementsByClassName('konva_devtool_rect');
   [].forEach.apply(elements, [
     function (e) {
@@ -161,79 +172,84 @@ function removeAllBox () {
   ]);
 }
 
-function getElemetBBoxByHash (hash) {
-  let targetEl = window.__canvas_instances__.globalMap[hash];
-
+function getElemetBBoxByHash(hash) {
+  const targetEl = window.__canvas_instances__.globalMap[hash];
   if (!targetEl) {
     return {
       x: 0,
       y: 0,
       width: 0,
-      height: 0
+      height: 0,
+      rotation: 0,
+      scale: {
+        x: 1,
+        y: 1
+      }
     };
   }
 
+  const pos = targetEl.getAbsolutePosition();
+  const rotation = targetEl.getAbsoluteRotation();
+  const { x: scaleX = 1, y: scaleY = 1 } = targetEl.getAbsoluteScale();
+
   const rect = {
-    x: targetEl.x(),
-    y: targetEl.y(),
+    x: pos.x,
+    y: pos.y,
     width: targetEl.width(),
-    height: targetEl.height()
+    height: targetEl.height(),
+    rotation,
+    scale: { x: scaleX, y: scaleY }
   };
+  rect.transformOrigin = 'top left';
 
-  if (targetEl.rotation()) {
-    rect.transform = `rotate(${targetEl.rotation()}deg)`;
-    rect.transformOrigin = 'top left';
-  }
-
-  while (targetEl.parent) {
-    rect.x += targetEl.parent.x() || 0;
-    rect.y += targetEl.parent.y() || 0;
-    targetEl = targetEl.parent;
+  rect.transform = `scale(${scaleX}, ${scaleY})`;
+  if (rotation) {
+    rect.transform = `${rect.transform} rotate(${rotation}deg)`;
   }
 
   return rect;
 }
 
-function getElementAttrByHash (hash) {
+function getElementAttrByHash(hash) {
   return window.__canvas_instances__.globalMap[hash].getAttrs();
 }
 
-function setElementAttrByHash (hash, name, value) {
+function setElementAttrByHash(hash, name, value) {
   return window.__canvas_instances__.globalMap[hash].setAttr(name, value);
 }
 
-function setKElementByHash (hash) {
+function setKElementByHash(hash) {
   window.$gElemet = hash ? window.__canvas_instances__.globalMap[hash] : undefined;
 }
 
-function consoleElementByHash (hash, desc) {
+function consoleElementByHash(hash, desc) {
   window.console.log(
     desc || '<Click To Expand>',
     window.__canvas_instances__.globalMap[hash]
   );
 }
 
-function setRect (bbox, id, color) {
+function setRect(bbox, id, color) {
   executeFuntionInInspectWindow(removeAllBox).finally(() => {
     executeFuntionInInspectWindow(createBoxUsingId, [bbox, id, color]);
   });
 }
 
-function cleanRect () {
+function cleanRect() {
   executeFuntionInInspectWindow(removeAllBox);
 }
 
-function showRect (hash, id, color) {
+function showRect(hash, id, color) {
   executeFuntionInInspectWindow(getElemetBBoxByHash, [hash]).then((bbox) => {
     setRect(bbox, id, color);
   });
 }
 
-function cleanAllRect () {
+function cleanAllRect() {
   executeFuntionInInspectWindow(removeAllBox);
 }
 
-function getAttrs (hash) {
+function getAttrs(hash) {
   if (hash) {
     executeFuntionInInspectWindow(setKElementByHash, [hash]);
     return executeFuntionInInspectWindow(getElementAttrByHash, [hash]);
@@ -241,7 +257,7 @@ function getAttrs (hash) {
   return executeFuntionInInspectWindow(setKElementByHash, []);
 }
 
-function updateAttrs (hash, name, attrs) {
+function updateAttrs(hash, name, attrs) {
   return executeFuntionInInspectWindow(setElementAttrByHash, [
     hash,
     name,
@@ -249,11 +265,11 @@ function updateAttrs (hash, name, attrs) {
   ]);
 }
 
-function consoleEl (hash, desc) {
+function consoleEl(hash, desc) {
   return executeFuntionInInspectWindow(consoleElementByHash, [hash, desc]);
 }
 
-function checkCanvasAlive (hash) {
+function checkCanvasAlive(hash) {
   return executeFuntionInInspectWindow(checkCanvasByHash, [hash]).then(
     (res) => {
       if (res) {
@@ -266,16 +282,16 @@ function checkCanvasAlive (hash) {
   );
 }
 
-function getNowCanvasData () {
+function getNowCanvasData() {
   return executeFuntionInInspectWindow(getGlobalInstances);
 }
 
-function openMainPageListening () {
+function openMainPageListening() {
   window.lastInstance = null;
 
   window.hoverRectHandler = function (event) {
     const canvasRoot = window.__canvas_root__ || document.querySelector('.konvajs-content');
-    if (!canvasRoot) {
+    if (!canvasRoot || !window.__canvas_instances__) {
       return;
     }
 
@@ -287,8 +303,8 @@ function openMainPageListening () {
     const isMatch = (instance) => {
       const rect = window.getElemetBBoxByHash(instance.__dev_hash);
 
-      if (rect.x <= x && (rect.x + rect.width) >= x &&
-        rect.y <= y && (rect.y + rect.height) >= y &&
+      if (rect.x <= x && (rect.x + rect.width * rect.scale.x) >= x &&
+        rect.y <= y && (rect.y + rect.height * rect.scale.y) >= y &&
         instance.nodeType === 'Shape'
       ) {
         matchShapes.push(instance);
@@ -317,24 +333,23 @@ function openMainPageListening () {
         window.removeEventListener('click', window.clickHandler);
       }
 
+      const pos = instance.getAbsolutePosition();
+      const rotation = instance.getAbsoluteRotation();
+      const { x: scaleX = 1, y: scaleY = 1 } = instance.getAbsoluteScale();
+
       const rect = {
-        x: instance.x(),
-        y: instance.y(),
+        x: pos.x,
+        y: pos.y,
         width: instance.width(),
         height: instance.height()
       };
 
-      let targetInstance = instance;
+      const targetInstance = instance;
 
-      if (targetInstance.rotation()) {
-        rect.transform = `rotate(${targetInstance.rotation()}deg)`;
+      rect.transform = `scale(${scaleX}, ${scaleY})`;
+      if (rotation) {
+        rect.transform = `${rect.transform} rotate(${rotation}deg)`;
         rect.transformOrigin = 'top left';
-      }
-
-      while (targetInstance.parent) {
-        rect.x += targetInstance.parent.x() || 0;
-        rect.y += targetInstance.parent.y() || 0;
-        targetInstance = targetInstance.parent;
       }
 
       window.createBoxUsingId(rect, '__hover__');
@@ -356,14 +371,14 @@ function openMainPageListening () {
   window.addEventListener('mousemove', hoverRectHandler);
 }
 
-function closeMainPageListening () {
+function closeMainPageListening() {
   if (window.__hover__) {
     window.__hover__.remove();
   }
   window.removeEventListener('mousemove', window.hoverRectHandler);
 }
 
-function onSwitchPageListening (checked) {
+function onSwitchPageListening(checked) {
   if (checked) {
     executeFuntionInInspectWindow(openMainPageListening);
   } else {
@@ -371,7 +386,7 @@ function onSwitchPageListening (checked) {
   }
 }
 
-function injectGlobalScript () {
+function injectGlobalScript() {
   const injectScript = (createBoxUsingId, removeBoxUsingId, getElemetBBoxByHash) => {
     window.createBoxUsingId = new Function(`return ${createBoxUsingId}`)();
     window.removeBoxUsingId = new Function(`return ${removeBoxUsingId}`)();
@@ -392,7 +407,7 @@ chrome.tabs.onUpdated.addListener(() => {
   injectGlobalScript();
 });
 
-function mountDevTool () {
+function mountDevTool() {
   getNowCanvasData().then(function (data) {
     const container = document.getElementById('container');
     window.mount(data, container, {

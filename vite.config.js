@@ -42,7 +42,8 @@ export default defineConfig({
           src: path.resolve(__dirname, 'manifest.json'),
           dest: path.resolve(__dirname, 'devtools')
         }
-      ]
+      ],
+      watch: {}
     })
   ],
   css: {

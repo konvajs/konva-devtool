@@ -14,7 +14,7 @@ function createPanelInstance () {
   }
   // initial devtool instance
   chrome.devtools.inspectedWindow.eval(
-    '!!(window.__canvas_instances__ && window.__canvas_instances__.length)',
+    '!!((window.__canvas_instances__ && window.__canvas_instances__.length) || (window.Konva && window.Konva.stages && window.Konva.stages.length))',
     function (gConnected, err) {
       clearInterval(interval);
 

@@ -24,3 +24,8 @@ Then, you can open inspect, select konva dev tool, and you can see the following
 Now, you can go to the Chrome Store and install it.
 
 [Konva Dev Tool](https://chrome.google.com/webstore/detail/konva-dev-tool/liddfplammjmpepmjkokfmgemohhhnnm?hl=zh-CN)
+
+## notice
+
+Preview depends on the `.konvajs-content` element, if you override this element's className, you need to implement `window.__canvas_root__`.
+ 
