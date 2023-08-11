@@ -83,14 +83,19 @@ const Tree = (props) => {
             <Space>
               {iconMap[node.type]}
               {node.title}
+              {node.attrs?.name && (
+                <Typography.Text type='secondary'>
+                  Name: "{node.attrs.name}"
+                </Typography.Text>
+              )}
               {node.name && (
                 <Typography.Text type='secondary'>
-                  name:{node.name}
+                  Type: {node.name}
                 </Typography.Text>
               )}
               {node.id && (
                 <Typography.Text type='secondary'>
-                  id:{node.id}
+                  Id: {node.id}
                 </Typography.Text>
               )}
               {
