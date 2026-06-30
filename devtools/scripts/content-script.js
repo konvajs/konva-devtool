@@ -1,14 +1,1 @@
-// forward the message sent by inspectWindow
-window.addEventListener('showShape', function (e) {
-  chrome.runtime.sendMessage({
-    type: 'showShape',
-    detail: e.detail
-  });
-});
-
-window.addEventListener('closeHover', function (e) {
-  chrome.runtime.sendMessage({
-    type: 'closeHover',
-    detail: e.detail
-  });
-});
+function o(e){window.addEventListener(e,n=>{chrome.runtime.sendMessage({type:e,detail:n instanceof CustomEvent?n.detail:void 0})})}o("showShape");o("closeHover");
