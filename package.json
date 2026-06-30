@@ -2,7 +2,7 @@
   "name": "konva-devtool",
   "version": "0.0.1",
   "description": "konva devtool",
-  "main": "devtools/ui/ui.js",
+  "main": "devtools/scripts/panel.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:yinguangyao/konva-devtool.git"
