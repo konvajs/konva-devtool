@@ -35,16 +35,5 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "main.html",
-        "panel.html",
-        "scripts/backend.js"
-      ],
-      "matches": [],
-      "extension_ids": []
-    }
-  ],
   "action": {}
 }
