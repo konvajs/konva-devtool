@@ -37,6 +37,9 @@ function stubMatchMedia(): void {
 }
 
 function renderToolbar(props: {
+  actions?: DevtoolActions;
+  setData?: (data: CanvasTree[]) => void;
+  setSelectedCanvasHash?: (hash: string) => void;
   mouseoverInspecting?: boolean;
   setMouseoverInspecting?: (enabled: boolean) => void;
 } = {}): HTMLElement {
@@ -47,12 +50,12 @@ function renderToolbar(props: {
   act(() => {
     ReactDOM.render(
       <InspectorToolbar
-        actions={createActions()}
+        actions={props.actions ?? createActions()}
         data={[canvas]}
         selectedCanvas={canvas}
         selectedCanvasHash={canvas.hash}
-        setData={vi.fn()}
-        setSelectedCanvasHash={vi.fn()}
+        setData={props.setData ?? vi.fn()}
+        setSelectedCanvasHash={props.setSelectedCanvasHash ?? vi.fn()}
         mouseoverInspecting={props.mouseoverInspecting ?? false}
         setMouseoverInspecting={props.setMouseoverInspecting ?? vi.fn()}
       />,
@@ -88,5 +91,26 @@ describe('InspectorToolbar', () => {
     const container = renderToolbar({ mouseoverInspecting: true });
 
     expect(container.querySelector('button[aria-label="Inspect page element"]')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('refreshes canvases on demand and selects the first canvas when the current one disappears', async () => {
+    const nextData: CanvasTree[] = [{ type: 'renderer', name: 'renderer', hash: 'canvas-2' }];
+    const actions = createActions();
+    vi.mocked(actions.refreshCanvases).mockResolvedValue(nextData);
+    const setData = vi.fn();
+    const setSelectedCanvasHash = vi.fn();
+    const container = renderToolbar({ actions, setData, setSelectedCanvasHash });
+    const refreshButton = container.querySelector<HTMLButtonElement>('button[aria-label="Refresh canvases"]');
+
+    expect(refreshButton).not.toBeNull();
+
+    await act(async () => {
+      refreshButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(actions.refreshCanvases).toHaveBeenCalledOnce();
+    expect(setData).toHaveBeenCalledWith(nextData);
+    expect(setSelectedCanvasHash).toHaveBeenCalledWith('canvas-2');
   });
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CodeOutlined, SelectOutlined } from '@ant-design/icons';
+import { CodeOutlined, ReloadOutlined, SelectOutlined } from '@ant-design/icons';
 import { Button, Col, Row, Tag, Tooltip } from 'antd';
 
 import type { DevtoolActions } from '../../panel/devtool-actions';
@@ -29,6 +29,7 @@ function InspectorToolbar({
   actions,
 }: InspectorToolbarProps): JSX.Element {
   const [canvasAlive, setCanvasAlive] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -64,6 +65,21 @@ function InspectorToolbar({
     setMouseoverInspecting(!mouseoverInspecting);
   };
 
+  const refreshCanvases = async () => {
+    setRefreshing(true);
+
+    try {
+      const nextData = await actions.refreshCanvases();
+      setData(nextData);
+
+      if (!nextData.some((canvas) => canvas.hash === selectedCanvasHash)) {
+        setSelectedCanvasHash(nextData[0]?.hash ?? '');
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <Row
       align="middle"
@@ -94,6 +110,18 @@ function InspectorToolbar({
       </Col>
       <Col>
         <CanvasSelector data={data} selectedCanvasHash={selectedCanvasHash} onChange={setSelectedCanvasHash} />
+      </Col>
+      <Col>
+        <Tooltip arrowPointAtCenter title="Refresh canvases">
+          <Button
+            aria-label="Refresh canvases"
+            icon={<ReloadOutlined />}
+            loading={refreshing}
+            onClick={() => void refreshCanvases()}
+            size="small"
+            type="text"
+          />
+        </Tooltip>
       </Col>
       {canvasAlive ? (
         <Col>
