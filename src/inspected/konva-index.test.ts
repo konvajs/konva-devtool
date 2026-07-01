@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createKonvaIndex } from './konva-index';
 import type { KonvaLikeNode } from './konva-types';
 
-function fakeNode(input: {
+interface FakeNodeInput {
   className: string;
   nodeType?: string;
   id?: number;
@@ -15,8 +15,30 @@ function fakeNode(input: {
   scale?: { x: number; y: number };
   size?: { width: number; height: number };
   clientRect?: { x: number; y: number; width: number; height: number };
+  localClientRect?: { x: number; y: number; width: number; height: number };
+  absoluteTransformPoint?: (point: { x: number; y: number }) => { x: number; y: number };
   exposeGeometryMethods?: boolean;
-}): KonvaLikeNode {
+}
+
+function getFakeAbsoluteTransform(input: FakeNodeInput): KonvaLikeNode['getAbsoluteTransform'] {
+  if (!input.absoluteTransformPoint) {
+    return undefined;
+  }
+
+  return () => ({ point: input.absoluteTransformPoint as (point: { x: number; y: number }) => { x: number; y: number } });
+}
+
+function getFakeClientRect(input: FakeNodeInput): KonvaLikeNode['getClientRect'] {
+  if (!input.clientRect && !input.localClientRect) {
+    return undefined;
+  }
+
+  return (config?: { skipTransform?: boolean }) => {
+    return (config?.skipTransform ? input.localClientRect : input.clientRect) as { x: number; y: number; width: number; height: number };
+  };
+}
+
+function fakeNode(input: FakeNodeInput): KonvaLikeNode {
   const attrs = input.attrs ?? {};
   const exposeGeometryMethods = input.exposeGeometryMethods ?? true;
 
@@ -39,7 +61,8 @@ function fakeNode(input: {
     getAbsolutePosition: exposeGeometryMethods ? () => input.position ?? { x: 0, y: 0 } : undefined,
     getAbsoluteRotation: exposeGeometryMethods ? () => input.rotation ?? 0 : undefined,
     getAbsoluteScale: exposeGeometryMethods ? () => input.scale ?? { x: 1, y: 1 } : undefined,
-    getClientRect: input.clientRect ? () => input.clientRect as { x: number; y: number; width: number; height: number } : undefined,
+    getAbsoluteTransform: getFakeAbsoluteTransform(input),
+    getClientRect: getFakeClientRect(input),
     width: exposeGeometryMethods ? () => input.size?.width ?? 10 : undefined,
     height: exposeGeometryMethods ? () => input.size?.height ?? 20 : undefined,
   };
@@ -204,6 +227,54 @@ describe('createKonvaIndex', () => {
       height: 56.4,
       rotation: 0,
       scale: { x: 1, y: 1 },
+    });
+  });
+
+  it('returns oriented corner points when a transformed local client rect is available', () => {
+    const rotatedShape = fakeNode({
+      className: 'Text',
+      nodeType: 'Shape',
+      clientRect: {
+        x: 150,
+        y: 100,
+        width: 50,
+        height: 100,
+      },
+      localClientRect: {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 50,
+      },
+      absoluteTransformPoint: (point) => ({
+        x: 200 - point.y,
+        y: 100 + point.x,
+      }),
+    });
+    const layer = fakeNode({ className: 'Layer', children: [rotatedShape] });
+    const index = createKonvaIndex({
+      getCanvasInstances: () => [layer],
+      getPerformanceMemory: () => undefined,
+      getFps: () => undefined,
+      log: vi.fn(),
+    });
+
+    const [canvas] = index.refresh();
+    const nodeHash = canvas.children?.[0].hash as string;
+
+    expect(index.getBBox(nodeHash)).toEqual({
+      x: 150,
+      y: 100,
+      width: 50,
+      height: 100,
+      rotation: 0,
+      scale: { x: 1, y: 1 },
+      points: [
+        { x: 200, y: 100 },
+        { x: 200, y: 200 },
+        { x: 150, y: 200 },
+        { x: 150, y: 100 },
+      ],
     });
   });
 

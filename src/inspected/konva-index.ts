@@ -1,4 +1,4 @@
-import type { CanvasAttrs, CanvasBBox, CanvasTree, NodeHash } from '../shared/types';
+import type { CanvasAttrs, CanvasBBox, CanvasPoint, CanvasTree, NodeHash } from '../shared/types';
 import { serializeAttrs } from './attrs-serialization';
 import { createHash } from './hash';
 import type { KonvaIndexEnvironment, KonvaLikeNode } from './konva-types';
@@ -69,8 +69,15 @@ function getNodeSize(node: KonvaLikeNode): { width: number; height: number } {
   };
 }
 
-function getNodeClientBBox(node: KonvaLikeNode): CanvasBBox | undefined {
-  const clientRect = node.getClientRect?.();
+interface NumericRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function getNumericClientRect(node: KonvaLikeNode, config?: { skipTransform?: boolean }): NumericRect | undefined {
+  const clientRect = node.getClientRect?.(config);
 
   if (!clientRect) {
     return undefined;
@@ -85,11 +92,63 @@ function getNodeClientBBox(node: KonvaLikeNode): CanvasBBox | undefined {
     return undefined;
   }
 
+  return { x, y, width, height };
+}
+
+function getPointsBBox(points: CanvasPoint[]): Pick<CanvasBBox, 'x' | 'y' | 'width' | 'height'> {
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  const maxX = Math.max(...xs);
+  const maxY = Math.max(...ys);
+
   return {
-    x,
-    y,
-    width,
-    height,
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+function getOrientedClientBBox(node: KonvaLikeNode): CanvasBBox | undefined {
+  const transform = node.getAbsoluteTransform?.();
+  const localRect = transform ? getNumericClientRect(node, { skipTransform: true }) : undefined;
+
+  if (!transform || !localRect) {
+    return undefined;
+  }
+
+  const points = [
+    transform.point({ x: localRect.x, y: localRect.y }),
+    transform.point({ x: localRect.x + localRect.width, y: localRect.y }),
+    transform.point({ x: localRect.x + localRect.width, y: localRect.y + localRect.height }),
+    transform.point({ x: localRect.x, y: localRect.y + localRect.height }),
+  ];
+
+  return {
+    ...getPointsBBox(points),
+    rotation: 0,
+    scale: { x: 1, y: 1 },
+    points,
+  };
+}
+
+function getNodeClientBBox(node: KonvaLikeNode): CanvasBBox | undefined {
+  const orientedBBox = getOrientedClientBBox(node);
+
+  if (orientedBBox) {
+    return orientedBBox;
+  }
+
+  const clientRect = getNumericClientRect(node);
+
+  if (!clientRect) {
+    return undefined;
+  }
+
+  return {
+    ...clientRect,
     rotation: 0,
     scale: { x: 1, y: 1 },
   };

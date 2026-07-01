@@ -1,4 +1,12 @@
-import type { CanvasAttrs, NodeHash } from '../shared/types';
+import type { CanvasAttrs, CanvasPoint, NodeHash } from '../shared/types';
+
+export interface KonvaClientRectConfig {
+  skipTransform?: boolean;
+}
+
+export interface KonvaTransform {
+  point(point: CanvasPoint): CanvasPoint;
+}
 
 export interface KonvaLikeNode {
   _id?: string | number;
@@ -20,7 +28,8 @@ export interface KonvaLikeNode {
   getAbsolutePosition?: () => { x: number; y: number };
   getAbsoluteRotation?: () => number;
   getAbsoluteScale?: () => { x: number; y: number };
-  getClientRect?: () => { x?: number; y?: number; width?: number; height?: number };
+  getAbsoluteTransform?: () => KonvaTransform;
+  getClientRect?: (config?: KonvaClientRectConfig) => { x?: number; y?: number; width?: number; height?: number } | undefined;
   container?: () => Element | null;
   x?: () => number;
   y?: () => number;

@@ -89,6 +89,54 @@ describe('overlay', () => {
     expect(document.querySelectorAll('.konva_devtool_rect')).toHaveLength(0);
   });
 
+  it('draws oriented overlays as polygons instead of axis-aligned divs', () => {
+    const root = document.createElement('div');
+    root.className = 'konvajs-content';
+    root.getBoundingClientRect = () => ({
+      x: 5,
+      y: 6,
+      width: 100,
+      height: 100,
+      top: 6,
+      left: 5,
+      right: 105,
+      bottom: 106,
+      toJSON: () => ({}),
+    });
+    Object.defineProperty(root, 'offsetWidth', { value: 100, configurable: true });
+    Object.defineProperty(root, 'offsetHeight', { value: 100, configurable: true });
+    document.body.appendChild(root);
+
+    showOverlay(
+      {
+        x: 0,
+        y: 20,
+        width: 30,
+        height: 30,
+        rotation: 0,
+        scale: { x: 1, y: 1 },
+        points: [
+          { x: 10, y: 20 },
+          { x: 30, y: 30 },
+          { x: 20, y: 50 },
+          { x: 0, y: 40 },
+        ],
+      },
+      '__hover__'
+    );
+
+    const overlay = document.querySelector<SVGSVGElement>('svg.konva_devtool_rect');
+    const polygon = overlay?.querySelector('polygon');
+
+    expect(overlay).not.toBeNull();
+    expect(overlay?.style.left).toBe('5px');
+    expect(overlay?.style.top).toBe('26px');
+    expect(overlay?.style.width).toBe('30px');
+    expect(overlay?.style.height).toBe('30px');
+    expect(overlay?.style.overflow).toBe('visible');
+    expect(polygon?.getAttribute('points')).toBe('10,0 30,10 20,30 0,20');
+  });
+
   it('accounts for page scroll when positioning document overlays', () => {
     Object.defineProperty(window, 'scrollX', { value: 50, configurable: true });
     Object.defineProperty(window, 'scrollY', { value: 70, configurable: true });
