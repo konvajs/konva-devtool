@@ -40,7 +40,7 @@ export function showOverlay(bbox: CanvasBBox, overlayId: OverlayId, color?: stri
   const el = document.createElement('div');
   el.classList.add('konva_devtool_rect');
   el.dataset.overlayId = overlayId;
-  Object.assign(el.style, computeOverlayStyle(bbox, { x: rect.x, y: rect.y }, color));
+  Object.assign(el.style, computeOverlayStyle(bbox, { x: rect.x + window.scrollX, y: rect.y + window.scrollY }, color));
   document.body.appendChild(el);
 }
 

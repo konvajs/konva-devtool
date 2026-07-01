@@ -10,4 +10,14 @@ describe('installKonvaDevtoolRuntime', () => {
     expect(first).toBe(second);
     expect(window.__KONVA_DEVTOOL__).toBe(first);
   });
+
+  it('allows a disposed runtime to be replaced on the same window', () => {
+    const first = installKonvaDevtoolRuntime(window);
+
+    first.dispose();
+    const second = installKonvaDevtoolRuntime(window);
+
+    expect(second).not.toBe(first);
+    expect(window.__KONVA_DEVTOOL__).toBe(second);
+  });
 });

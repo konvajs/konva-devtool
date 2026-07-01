@@ -46,11 +46,15 @@ function executeRuntime<TResult>(
   return bridge.execute(callRuntime, [method, args] as const) as Promise<TResult | undefined>;
 }
 
+function wrapRuntimeSourceForEval(source: string): string {
+  return `;(() => {\n${source}\n})();`;
+}
+
 export function createRuntimeClient(bridge: InspectedPageBridge, loadRuntimeScript: () => Promise<string>): RuntimeClient {
   return {
     install: async () => {
       const source = await loadRuntimeScript();
-      await bridge.evaluate<void>(source);
+      await bridge.evaluate<void>(wrapRuntimeSourceForEval(source));
     },
     refresh: () => executeRuntime<CanvasTree[]>(bridge, 'refresh').then((result) => result ?? []),
     hasCanvas: (hash) => executeRuntime<boolean>(bridge, 'hasCanvas', [hash]).then(Boolean),

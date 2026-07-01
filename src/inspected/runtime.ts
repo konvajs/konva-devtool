@@ -113,6 +113,9 @@ export function installKonvaDevtoolRuntime(targetWindow: Window = window): Konva
     dispose: () => {
       mouseoverInspector.dispose();
       clearOverlay();
+      if (targetWindow.__KONVA_DEVTOOL__ === runtime) {
+        delete targetWindow.__KONVA_DEVTOOL__;
+      }
     },
   };
 
