@@ -97,11 +97,11 @@ function createPolygonOverlay(
   Object.assign(svg.style, computeOverlayStyle(bbox, rootOffset, rootScale, color));
 
   polygon.setAttribute('points', localPoints);
-  polygon.setAttribute('fill', color);
   polygon.setAttribute('stroke', 'rgb(135, 59, 244)');
   polygon.setAttribute('stroke-width', '2');
   polygon.setAttribute('stroke-dasharray', '6 4');
   polygon.setAttribute('vector-effect', 'non-scaling-stroke');
+  polygon.style.fill = color;
   svg.appendChild(polygon);
 
   return svg;
