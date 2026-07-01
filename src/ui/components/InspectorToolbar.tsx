@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CodeOutlined } from '@ant-design/icons';
-import { Button, Col, Row, Switch, Tag, Tooltip } from 'antd';
+import { CodeOutlined, SelectOutlined } from '@ant-design/icons';
+import { Button, Col, Row, Tag, Tooltip } from 'antd';
 
 import type { DevtoolActions } from '../../panel/devtool-actions';
 import type { CanvasTree, NodeHash } from '../../shared/types';
@@ -60,8 +60,8 @@ function InspectorToolbar({
     }
   }, [actions, canvasAlive, setData, setSelectedCanvasHash]);
 
-  const onSwitch = (nextChecked: boolean) => {
-    setMouseoverInspecting(nextChecked);
+  const toggleMouseoverInspecting = () => {
+    setMouseoverInspecting(!mouseoverInspecting);
   };
 
   return (
@@ -81,8 +81,16 @@ function InspectorToolbar({
       gutter={[12, 12]}
     >
       <Col>
-        <span style={{ margin: '0 6px' }}>Enable Mouseover: </span>
-        <Switch checked={mouseoverInspecting} onChange={onSwitch} />
+        <Tooltip arrowPointAtCenter title="Inspect page element">
+          <Button
+            aria-label="Inspect page element"
+            aria-pressed={mouseoverInspecting}
+            icon={<SelectOutlined />}
+            onClick={toggleMouseoverInspecting}
+            size="small"
+            type={mouseoverInspecting ? 'primary' : 'text'}
+          />
+        </Tooltip>
       </Col>
       <Col>
         <CanvasSelector data={data} selectedCanvasHash={selectedCanvasHash} onChange={setSelectedCanvasHash} />
