@@ -3,8 +3,7 @@ import { CodeOutlined } from '@ant-design/icons';
 import { Button, Col, Row, Switch, Tag, Tooltip } from 'antd';
 
 import type { DevtoolActions } from '../../panel/devtool-actions';
-import { normalizeRuntimeEvent } from '../../shared/type-guards';
-import type { CanvasTree, ExtensionRuntimeMessage, NodeHash } from '../../shared/types';
+import type { CanvasTree, NodeHash } from '../../shared/types';
 import { countDescendants } from '../tree-model';
 import CanvasSelector from './CanvasSelector';
 
@@ -14,6 +13,8 @@ interface InspectorToolbarProps {
   selectedCanvasHash: NodeHash;
   setData(data: CanvasTree[]): void;
   setSelectedCanvasHash(hash: NodeHash): void;
+  mouseoverInspecting: boolean;
+  setMouseoverInspecting(enabled: boolean): void;
   actions: DevtoolActions;
 }
 
@@ -23,10 +24,11 @@ function InspectorToolbar({
   selectedCanvasHash,
   setData,
   setSelectedCanvasHash,
+  mouseoverInspecting,
+  setMouseoverInspecting,
   actions,
 }: InspectorToolbarProps): JSX.Element {
   const [canvasAlive, setCanvasAlive] = useState(true);
-  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -48,19 +50,6 @@ function InspectorToolbar({
   }, [actions, selectedCanvasHash, setData]);
 
   useEffect(() => {
-    const handler = (message: ExtensionRuntimeMessage) => {
-      const event = normalizeRuntimeEvent(message);
-      if (event?.type === 'closeHover' || event?.type === 'showShape') {
-        setChecked(false);
-        void actions.setMouseoverInspecting(false);
-      }
-    };
-    chrome.runtime.onMessage.addListener(handler);
-
-    return () => chrome.runtime.onMessage.removeListener(handler);
-  }, [actions]);
-
-  useEffect(() => {
     if (!canvasAlive) {
       void actions.refreshCanvases().then((nextData) => {
         if (nextData.length) {
@@ -72,8 +61,7 @@ function InspectorToolbar({
   }, [actions, canvasAlive, setData, setSelectedCanvasHash]);
 
   const onSwitch = (nextChecked: boolean) => {
-    setChecked(nextChecked);
-    void actions.setMouseoverInspecting(nextChecked);
+    setMouseoverInspecting(nextChecked);
   };
 
   return (
@@ -94,7 +82,7 @@ function InspectorToolbar({
     >
       <Col>
         <span style={{ margin: '0 6px' }}>Enable Mouseover: </span>
-        <Switch checked={checked} onChange={onSwitch} />
+        <Switch checked={mouseoverInspecting} onChange={onSwitch} />
       </Col>
       <Col>
         <CanvasSelector data={data} selectedCanvasHash={selectedCanvasHash} onChange={setSelectedCanvasHash} />

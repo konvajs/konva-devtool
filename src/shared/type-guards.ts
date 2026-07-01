@@ -1,14 +1,30 @@
 import type { ExtensionRuntimeMessage, RuntimeEvent } from './types';
 
-export function normalizeRuntimeEvent(message: ExtensionRuntimeMessage): RuntimeEvent | undefined {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isNodeHash(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+export function normalizeRuntimeEvent(message: ExtensionRuntimeMessage | unknown): RuntimeEvent | undefined {
+  if (!isRecord(message)) {
+    return undefined;
+  }
+
   if (message.type === 'closeHover') {
-    return message;
+    return { type: 'closeHover' };
   }
 
   if (message.type === 'showShape') {
     const detail = message.detail;
 
-    if ('canvasHash' in detail && 'nodeHash' in detail) {
+    if (!isRecord(detail)) {
+      return undefined;
+    }
+
+    if (isNodeHash(detail.canvasHash) && isNodeHash(detail.nodeHash)) {
       return {
         type: 'showShape',
         detail: {
@@ -18,7 +34,7 @@ export function normalizeRuntimeEvent(message: ExtensionRuntimeMessage): Runtime
       };
     }
 
-    if ('hash' in detail && 'key' in detail) {
+    if (isNodeHash(detail.hash) && isNodeHash(detail.key)) {
       return {
         type: 'showShape',
         detail: {

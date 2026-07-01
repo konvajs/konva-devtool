@@ -4,8 +4,13 @@ import ReactDOM from 'react-dom';
 
 import type { DevtoolActions } from '../panel/devtool-actions';
 import type { CanvasTree } from '../shared/types';
-import App from './App';
+import App, { type RuntimeEventSubscription } from './App';
 
-export function mountDevtool(container: Element, data: CanvasTree[], actions: DevtoolActions): void {
-  ReactDOM.render(<App data={data} actions={actions} />, container);
+export function mountDevtool(
+  container: Element,
+  data: CanvasTree[],
+  actions: DevtoolActions,
+  runtimeEvents?: RuntimeEventSubscription
+): void {
+  ReactDOM.render(<App data={data} actions={actions} runtimeEvents={runtimeEvents} />, container);
 }

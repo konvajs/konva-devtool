@@ -1,6 +1,16 @@
 let panelCreated = false;
 let detectionInterval: number | undefined;
 
+const KONVA_DETECTION_SCRIPT =
+  '!!((window.__canvas_instances__ && window.__canvas_instances__.length) || (window.Konva && window.Konva.stages && window.Konva.stages.length))';
+
+function updateActionIcon(disabled: boolean): void {
+  chrome.runtime.sendMessage({
+    isKonva: true,
+    disabled,
+  });
+}
+
 function removePageOverlays(): void {
   chrome.devtools.inspectedWindow.eval(`
     (function() {
@@ -23,10 +33,6 @@ function createPanel(): void {
     panel.onHidden.addListener(removePageOverlays);
   });
 
-  chrome.runtime.sendMessage({
-    isKonva: true,
-    disabled: false,
-  });
   panelCreated = true;
 
   if (detectionInterval) {
@@ -36,16 +42,21 @@ function createPanel(): void {
 }
 
 function checkForKonva(): void {
-  chrome.devtools.inspectedWindow.eval(
-    '!!((window.__canvas_instances__ && window.__canvas_instances__.length) || (window.Konva && window.Konva.stages && window.Konva.stages.length))',
-    () => createPanel()
-  );
+  chrome.devtools.inspectedWindow.eval(KONVA_DETECTION_SCRIPT, (detected, exception) => {
+    const isKonvaPage = Boolean(detected) && !exception;
+    updateActionIcon(!isKonvaPage);
+
+    if (isKonvaPage) {
+      createPanel();
+    }
+  });
 }
 
 chrome.devtools.network.onNavigated.addListener(() => {
-  panelCreated = false;
   checkForKonva();
 });
 
 checkForKonva();
 detectionInterval = window.setInterval(checkForKonva, 1000);
+
+export {};
