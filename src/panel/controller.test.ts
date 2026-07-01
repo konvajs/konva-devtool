@@ -37,7 +37,7 @@ describe('createDevtoolController', () => {
     await controller.actions.updateAttr('node-1', 'fill', 'blue');
     await controller.actions.setMouseoverInspecting(true);
 
-    expect(runtimeClient.showOverlay).toHaveBeenCalledWith('node-1', '__hover__', undefined);
+    expect(runtimeClient.showOverlay).toHaveBeenCalledWith('node-1', '__hover__');
     expect(runtimeClient.updateAttr).toHaveBeenCalledWith('node-1', 'fill', 'blue');
     expect(runtimeClient.setMouseoverInspecting).toHaveBeenCalledWith(true);
   });

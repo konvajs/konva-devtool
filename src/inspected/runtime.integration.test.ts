@@ -135,11 +135,11 @@ describe('Konva inspected runtime integration', () => {
     expect(shapeTree?.attrs).toMatchObject({ fill: 'red', name: 'target' });
     expect(runtime.hasCanvas(canvasTree.hash)).toBe(true);
 
-    runtime.showOverlay(shapeTree?.hash ?? '', '__select__', 'rgba(1, 2, 3, 0.4)');
+    runtime.showOverlay(shapeTree?.hash ?? '', '__select__');
     const overlay = document.querySelector<HTMLElement>('.konva_devtool_rect[data-overlay-id="__select__"]');
     expect(overlay?.style.left).toBe('15px');
     expect(overlay?.style.top).toBe('26px');
-    expect(overlay?.style.background).toBe('rgba(1, 2, 3, 0.4)');
+    expect(overlay?.style.background).toBe('rgba(135, 59, 244, 0.5)');
 
     runtime.updateAttr(shapeTree?.hash ?? '', 'fill', 'blue');
     expect(shape.attrs.fill).toBe('blue');

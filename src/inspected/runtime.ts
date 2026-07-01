@@ -17,7 +17,7 @@ export interface KonvaDevtoolRuntime {
   getAttrs(hash: NodeHash): CanvasAttrs | undefined;
   updateAttr(hash: NodeHash, name: string, value: unknown): void;
   getBBox(hash: NodeHash): CanvasBBox;
-  showOverlay(hash: NodeHash, overlayId: OverlayId, color?: string): void;
+  showOverlay(hash: NodeHash, overlayId: OverlayId): void;
   clearOverlay(overlayId?: OverlayId): void;
   setMouseoverInspecting(enabled: boolean): void;
   consoleNode(hash: NodeHash, label?: string): void;
@@ -106,9 +106,9 @@ export function installKonvaDevtoolRuntime(targetWindow: Window = window): Konva
     getAttrs: (hash) => index.getAttrs(hash),
     updateAttr: (hash, name, value) => index.updateAttr(hash, name, value),
     getBBox: (hash) => index.getBBox(hash),
-    showOverlay: (hash, overlayId, color) => {
+    showOverlay: (hash, overlayId) => {
       const node = index.getNode(hash);
-      showOverlay(index.getBBox(hash), overlayId, color, getNodeCanvasRoot(node, getCanvasRoot(targetWindow)));
+      showOverlay(index.getBBox(hash), overlayId, getNodeCanvasRoot(node, getCanvasRoot(targetWindow)));
     },
     clearOverlay: (overlayId) => clearOverlay(overlayId),
     setMouseoverInspecting: (enabled) => mouseoverInspector.setEnabled(enabled),

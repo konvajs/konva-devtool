@@ -19,7 +19,7 @@ export function createDevtoolController(runtimeClient: RuntimeClient): DevtoolCo
 
       return alive;
     },
-    showRect: (hash: NodeHash, overlayId: OverlayId, color?: string) => runtimeClient.showOverlay(hash, overlayId, color),
+    showRect: (hash: NodeHash, overlayId: OverlayId) => runtimeClient.showOverlay(hash, overlayId),
     clearRect: (overlayId?: OverlayId) => runtimeClient.clearOverlay(overlayId),
     getAttrs: (hash: NodeHash) => runtimeClient.getAttrs(hash),
     updateAttr: (hash: NodeHash, name: string, value: unknown) => runtimeClient.updateAttr(hash, name, value),

@@ -22,7 +22,7 @@ describe('overlay', () => {
       transformOrigin: 'top left',
     };
 
-    const style = computeOverlayStyle(bbox, { x: 100, y: 200 }, { x: 1, y: 1 }, 'red');
+    const style = computeOverlayStyle(bbox, { x: 100, y: 200 }, { x: 1, y: 1 });
 
     expect(style).toMatchObject({
       position: 'absolute',
@@ -30,7 +30,7 @@ describe('overlay', () => {
       height: '40px',
       top: '220px',
       left: '110px',
-      background: 'red',
+      background: 'rgba(135, 59, 244, 0.5)',
       transform: 'scale(2, 3) rotate(15deg)',
       transformOrigin: 'top left',
     });
@@ -47,8 +47,7 @@ describe('overlay', () => {
         scale: { x: 1, y: 1 },
       },
       { x: 100, y: 200 },
-      { x: 0.5, y: 0.25 },
-      'red'
+      { x: 0.5, y: 0.25 }
     );
 
     expect(style).toMatchObject({
