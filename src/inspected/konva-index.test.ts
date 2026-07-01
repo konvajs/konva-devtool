@@ -14,6 +14,7 @@ function fakeNode(input: {
   rotation?: number;
   scale?: { x: number; y: number };
   size?: { width: number; height: number };
+  clientRect?: { x: number; y: number; width: number; height: number };
   exposeGeometryMethods?: boolean;
 }): KonvaLikeNode {
   const attrs = input.attrs ?? {};
@@ -38,6 +39,7 @@ function fakeNode(input: {
     getAbsolutePosition: exposeGeometryMethods ? () => input.position ?? { x: 0, y: 0 } : undefined,
     getAbsoluteRotation: exposeGeometryMethods ? () => input.rotation ?? 0 : undefined,
     getAbsoluteScale: exposeGeometryMethods ? () => input.scale ?? { x: 1, y: 1 } : undefined,
+    getClientRect: input.clientRect ? () => input.clientRect as { x: number; y: number; width: number; height: number } : undefined,
     width: exposeGeometryMethods ? () => input.size?.width ?? 10 : undefined,
     height: exposeGeometryMethods ? () => input.size?.height ?? 20 : undefined,
   };
@@ -162,5 +164,96 @@ describe('createKonvaIndex', () => {
       transform: 'scale(0.46, 0.47) rotate(12deg)',
       transformOrigin: 'top left',
     });
+  });
+
+  it('prefers Konva client rects because they include parent transforms and custom shape bounds', () => {
+    const transformedShape = fakeNode({
+      className: 'EffectTextShape',
+      nodeType: 'Shape',
+      attrs: {
+        x: 702.5,
+        y: 52.25,
+        width: 714.75,
+        height: 120,
+        scaleX: 0.46,
+        scaleY: 0.47,
+      },
+      clientRect: {
+        x: 324.8,
+        y: 128.4,
+        width: 329,
+        height: 56.4,
+      },
+      exposeGeometryMethods: false,
+    });
+    const layer = fakeNode({ className: 'Layer', children: [transformedShape] });
+    const index = createKonvaIndex({
+      getCanvasInstances: () => [layer],
+      getPerformanceMemory: () => undefined,
+      getFps: () => undefined,
+      log: vi.fn(),
+    });
+
+    const [canvas] = index.refresh();
+    const nodeHash = canvas.children?.[0].hash as string;
+
+    expect(index.getBBox(nodeHash)).toEqual({
+      x: 324.8,
+      y: 128.4,
+      width: 329,
+      height: 56.4,
+      rotation: 0,
+      scale: { x: 1, y: 1 },
+    });
+  });
+
+  it('returns protocol-safe attrs instead of raw object graphs', () => {
+    const texture: Record<string, unknown> = { label: 'texture' };
+    texture.self = texture;
+    const attrs: Record<string, unknown> = {
+      name: 'hero',
+      x: 12,
+      texture,
+      deep: { a: { b: { c: { d: 'too deep' } } } },
+      handler: () => undefined,
+    };
+    attrs.self = attrs;
+
+    const shape = fakeNode({
+      className: 'Image',
+      nodeType: 'Shape',
+      attrs,
+    });
+    const layer = fakeNode({ className: 'Layer', children: [shape] });
+    const index = createKonvaIndex({
+      getCanvasInstances: () => [layer],
+      getPerformanceMemory: () => undefined,
+      getFps: () => undefined,
+      log: vi.fn(),
+    });
+
+    const [canvas] = index.refresh();
+    const nodeHash = canvas.children?.[0].hash as string;
+    const treeAttrs = canvas.children?.[0].attrs as Record<string, unknown>;
+
+    expect(treeAttrs).toEqual({
+      name: 'hero',
+      x: 12,
+      texture: {
+        label: 'texture',
+        self: '[Circular]',
+      },
+      deep: {
+        a: {
+          b: {
+            c: '[Object]',
+          },
+        },
+      },
+      handler: '[Function]',
+      self: '[Circular]',
+    });
+    expect(index.getAttrs(nodeHash)).toEqual(treeAttrs);
+    expect(() => JSON.stringify(canvas)).not.toThrow();
   });
 });

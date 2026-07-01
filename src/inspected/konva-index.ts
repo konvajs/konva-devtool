@@ -1,4 +1,5 @@
 import type { CanvasAttrs, CanvasBBox, CanvasTree, NodeHash } from '../shared/types';
+import { serializeAttrs } from './attrs-serialization';
 import { createHash } from './hash';
 import type { KonvaIndexEnvironment, KonvaLikeNode } from './konva-types';
 
@@ -68,6 +69,40 @@ function getNodeSize(node: KonvaLikeNode): { width: number; height: number } {
   };
 }
 
+function getNodeClientBBox(node: KonvaLikeNode): CanvasBBox | undefined {
+  const clientRect = node.getClientRect?.();
+
+  if (!clientRect) {
+    return undefined;
+  }
+
+  const x = getNumber(clientRect.x);
+  const y = getNumber(clientRect.y);
+  const width = getNumber(clientRect.width);
+  const height = getNumber(clientRect.height);
+
+  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+    return undefined;
+  }
+
+  return {
+    x,
+    y,
+    width,
+    height,
+    rotation: 0,
+    scale: { x: 1, y: 1 },
+  };
+}
+
+function getRawAttrs(node: KonvaLikeNode): CanvasAttrs | undefined {
+  return node.getAttrs?.() ?? node.attrs;
+}
+
+function getSerializableAttrs(node: KonvaLikeNode): CanvasAttrs | undefined {
+  return serializeAttrs(getRawAttrs(node));
+}
+
 export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
   let globalMap: Record<NodeHash, KonvaLikeNode> = {};
   let canvases: KonvaLikeNode[] = [];
@@ -78,7 +113,7 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
     globalMap[hash] = node;
 
     const children = getVisibleChildren(node).map((child) => serializeNode(child, canvasHash));
-    const attrs = node.getAttrs?.() ?? node.attrs;
+    const attrs = getSerializableAttrs(node);
     const type = node.className ?? node.nodeType ?? 'group';
 
     return {
@@ -119,7 +154,7 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
 
   function getAttrs(hash: NodeHash): CanvasAttrs | undefined {
     const node = getNode(hash);
-    return node?.getAttrs?.() ?? node?.attrs;
+    return node ? getSerializableAttrs(node) : undefined;
   }
 
   function updateAttr(hash: NodeHash, name: string, value: unknown): void {
@@ -138,6 +173,12 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
         rotation: 0,
         scale: { x: 1, y: 1 },
       };
+    }
+
+    const clientBBox = getNodeClientBBox(node);
+
+    if (clientBBox) {
+      return clientBBox;
     }
 
     const position = getNodePosition(node);
