@@ -135,6 +135,8 @@ describe('overlay', () => {
     expect(overlay?.style.height).toBe('30px');
     expect(overlay?.style.overflow).toBe('visible');
     expect(polygon?.getAttribute('points')).toBe('10,0 30,10 20,30 0,20');
+    expect(polygon?.getAttribute('fill')).toBeNull();
+    expect((polygon as SVGPolygonElement | null)?.style.fill).toBe('rgba(135, 59, 244, 0.5)');
   });
 
   it('accounts for page scroll when positioning document overlays', () => {
