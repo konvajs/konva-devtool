@@ -8,7 +8,7 @@ import { Empty, Space, Tree as AntTree, Typography } from 'antd';
 
 import type { DevtoolActions } from '../../panel/devtool-actions';
 import type { CanvasTree, NodeHash } from '../../shared/types';
-import { buildTreeData, type CanvasTreeData } from '../tree-model';
+import { buildTreeData, findTreePath, type CanvasTreeData } from '../tree-model';
 import AttrsDrawer from './AttrsDrawer';
 
 const iconMap: Record<CanvasTreeData['type'], JSX.Element> = {
@@ -21,12 +21,14 @@ interface CanvasTreeProps {
   data: CanvasTree;
   actions: DevtoolActions;
   selectedNodeHash?: NodeHash;
+  suppressSelectedOverlayHash?: NodeHash;
 }
 
-function CanvasTreeView({ data, actions, selectedNodeHash = '' }: CanvasTreeProps): JSX.Element {
+function CanvasTreeView({ data, actions, selectedNodeHash = '', suppressSelectedOverlayHash = '' }: CanvasTreeProps): JSX.Element {
   const [selectedKey, setSelected] = useState<NodeHash>(selectedNodeHash);
   const treeRef = useRef<{ scrollTo: (options: { key: NodeHash }) => void } | null>(null);
   const treeData = useMemo(() => buildTreeData(data, true), [data]);
+  const expandedKeys = useMemo(() => (selectedKey ? findTreePath(data, selectedKey) : []), [data, selectedKey]);
 
   const onMouseEnter = useCallback((node: CanvasTreeData) => {
     void actions.clearRect('__select__');
@@ -62,11 +64,16 @@ function CanvasTreeView({ data, actions, selectedNodeHash = '' }: CanvasTreeProp
       return undefined;
     }
 
+    if (selectedKey === suppressSelectedOverlayHash) {
+      void actions.clearRect('__select__');
+      return undefined;
+    }
+
     void actions.showRect(selectedKey, '__select__', 'rgba(29, 57, 196, 0.5)');
     return () => {
       void actions.clearRect('__select__');
     };
-  }, [actions, selectedKey]);
+  }, [actions, selectedKey, suppressSelectedOverlayHash]);
 
   if (!data) {
     return <Empty />;
@@ -78,7 +85,7 @@ function CanvasTreeView({ data, actions, selectedNodeHash = '' }: CanvasTreeProp
         ref={treeRef as never}
         autoExpandParent={true}
         selectedKeys={[selectedKey]}
-        expandedKeys={[selectedKey]}
+        expandedKeys={expandedKeys}
         onSelect={onSelect}
         showLine={{ showLeafIcon: false }}
         height={document.body.clientHeight - 45}

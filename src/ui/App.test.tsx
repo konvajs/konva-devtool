@@ -4,7 +4,7 @@ import { act } from 'react-dom/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { DevtoolActions } from '../panel/devtool-actions';
-import type { CanvasTree } from '../shared/types';
+import type { CanvasTree, RuntimeEvent } from '../shared/types';
 import App from './App';
 
 function createActions(): DevtoolActions {
@@ -53,5 +53,58 @@ describe('App', () => {
     });
 
     expect(container.textContent).toContain('ALIVE');
+  });
+
+  it('finalizes page inspection after selecting a shape from the canvas', async () => {
+    stubMatchMedia();
+    const actions = createActions();
+    const subscribers: Array<(event: RuntimeEvent) => void> = [];
+    const runtimeEvents = {
+      subscribe(handler: (event: RuntimeEvent) => void) {
+        subscribers.push(handler);
+        return vi.fn();
+      },
+    };
+    const data: CanvasTree[] = [
+      {
+        type: 'renderer',
+        name: 'renderer',
+        hash: 'canvas-1',
+        children: [
+          {
+            type: 'Group',
+            name: 'Group',
+            hash: 'group-1',
+            children: [{ type: 'Rect', name: 'Rect', hash: 'rect-1' }],
+          },
+        ],
+      },
+    ];
+    const container = document.createElement('div');
+
+    act(() => {
+      ReactDOM.render(<App actions={actions} data={data} runtimeEvents={runtimeEvents} />, container);
+    });
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('button[aria-label="Inspect page element"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(actions.setMouseoverInspecting).toHaveBeenLastCalledWith(true);
+
+    vi.mocked(actions.clearRect).mockClear();
+    vi.mocked(actions.showRect).mockClear();
+
+    await act(async () => {
+      subscribers[0]?.({ type: 'showShape', detail: { canvasHash: 'canvas-1', nodeHash: 'rect-1' } });
+      await Promise.resolve();
+    });
+
+    expect(actions.setMouseoverInspecting).toHaveBeenLastCalledWith(false);
+    expect(actions.clearRect).toHaveBeenCalledWith('__hover__');
+    expect(actions.clearRect).toHaveBeenCalledWith('__select__');
+    expect(actions.showRect).not.toHaveBeenCalledWith('rect-1', '__select__', expect.any(String));
+    expect(actions.getAttrs).toHaveBeenCalledWith('rect-1');
   });
 });

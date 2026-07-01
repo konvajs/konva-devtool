@@ -39,3 +39,19 @@ export function buildTreeData(data: CanvasTree, isRoot = false): CanvasTreeData 
     ...(hasChildren ? { children } : {}),
   };
 }
+
+export function findTreePath(data: CanvasTree, targetHash: NodeHash): NodeHash[] {
+  if (data.hash === targetHash) {
+    return [data.hash];
+  }
+
+  for (const child of data.children ?? []) {
+    const childPath = findTreePath(child, targetHash);
+
+    if (childPath.length) {
+      return [data.hash, ...childPath];
+    }
+  }
+
+  return [];
+}
