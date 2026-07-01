@@ -19,6 +19,11 @@ export interface KonvaLikeNode {
   getAbsolutePosition?: () => { x: number; y: number };
   getAbsoluteRotation?: () => number;
   getAbsoluteScale?: () => { x: number; y: number };
+  x?: () => number;
+  y?: () => number;
+  rotation?: () => number;
+  scaleX?: () => number;
+  scaleY?: () => number;
   width?: () => number;
   height?: () => number;
   destroy?: () => KonvaLikeNode;

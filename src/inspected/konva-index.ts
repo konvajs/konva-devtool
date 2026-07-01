@@ -35,6 +35,39 @@ function getVisibleChildren(node: KonvaLikeNode): KonvaLikeNode[] {
   return (node.getChildren?.() ?? []).filter((child) => child.visible?.() ?? true);
 }
 
+function getNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function getNodeNumber(node: KonvaLikeNode, name: string): number | undefined {
+  return getNumber(node.get?.(name)) ?? getNumber(node.attrs?.[name]);
+}
+
+function getNodePosition(node: KonvaLikeNode): { x: number; y: number } {
+  return node.getAbsolutePosition?.() ?? {
+    x: node.x?.() ?? getNodeNumber(node, 'x') ?? 0,
+    y: node.y?.() ?? getNodeNumber(node, 'y') ?? 0,
+  };
+}
+
+function getNodeRotation(node: KonvaLikeNode): number {
+  return node.getAbsoluteRotation?.() ?? node.rotation?.() ?? getNodeNumber(node, 'rotation') ?? 0;
+}
+
+function getNodeScale(node: KonvaLikeNode): { x: number; y: number } {
+  return node.getAbsoluteScale?.() ?? {
+    x: node.scaleX?.() ?? getNodeNumber(node, 'scaleX') ?? 1,
+    y: node.scaleY?.() ?? getNodeNumber(node, 'scaleY') ?? 1,
+  };
+}
+
+function getNodeSize(node: KonvaLikeNode): { width: number; height: number } {
+  return {
+    width: node.width?.() ?? getNodeNumber(node, 'width') ?? 0,
+    height: node.height?.() ?? getNodeNumber(node, 'height') ?? 0,
+  };
+}
+
 export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
   let globalMap: Record<NodeHash, KonvaLikeNode> = {};
   let canvases: KonvaLikeNode[] = [];
@@ -107,16 +140,17 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
       };
     }
 
-    const position = node.getAbsolutePosition?.() ?? { x: 0, y: 0 };
-    const rotation = node.getAbsoluteRotation?.() ?? 0;
-    const scale = node.getAbsoluteScale?.() ?? { x: 1, y: 1 };
+    const position = getNodePosition(node);
+    const rotation = getNodeRotation(node);
+    const scale = getNodeScale(node);
+    const size = getNodeSize(node);
     const transform = `scale(${scale.x}, ${scale.y})${rotation ? ` rotate(${rotation}deg)` : ''}`;
 
     return {
       x: position.x,
       y: position.y,
-      width: node.width?.() ?? 0,
-      height: node.height?.() ?? 0,
+      width: size.width,
+      height: size.height,
       rotation,
       scale,
       transform,
