@@ -1,11 +1,11 @@
 import type { CanvasBBox, NodeHash } from '../shared/types';
 import type { KonvaIndex } from './konva-index';
 import type { KonvaLikeNode } from './konva-types';
-import { clearOverlay, showOverlay } from './overlay';
+import { clearOverlay, getRenderedScale, showOverlay } from './overlay';
 
 interface MouseoverInspectorOptions {
   index: KonvaIndex;
-  getCanvasRoot(): Element | null;
+  getCanvasRoot(node: KonvaLikeNode): Element | null;
   dispatchShapeSelected(canvasHash: NodeHash, nodeHash: NodeHash): void;
 }
 
@@ -21,6 +21,16 @@ function containsPoint(bbox: CanvasBBox, x: number, y: number): boolean {
 function visit(node: KonvaLikeNode, visitor: (node: KonvaLikeNode) => void): void {
   visitor(node);
   node.getChildren?.().forEach((child) => visit(child, visitor));
+}
+
+function getCanvasRelativePoint(event: MouseEvent, canvasRoot: Element): { x: number; y: number } {
+  const rootRect = canvasRoot.getBoundingClientRect();
+  const rootScale = getRenderedScale(canvasRoot, rootRect);
+
+  return {
+    x: (event.clientX - rootRect.x) / rootScale.x,
+    y: (event.clientY - rootRect.y) / rootScale.y,
+  };
 }
 
 export function createMouseoverInspector(options: MouseoverInspectorOptions): {
@@ -39,16 +49,8 @@ export function createMouseoverInspector(options: MouseoverInspectorOptions): {
   }
 
   function onMouseMove(event: MouseEvent): void {
-    const canvasRoot = options.getCanvasRoot();
-
-    if (!canvasRoot) {
-      return;
-    }
-
-    const rootRect = canvasRoot.getBoundingClientRect();
-    const x = event.clientX - rootRect.x;
-    const y = event.clientY - rootRect.y;
     const matches: KonvaLikeNode[] = [];
+    const pointByRoot = new Map<Element, { x: number; y: number }>();
 
     options.index.refresh().forEach((canvas) => {
       const canvasNode = options.index.getNode(canvas.hash);
@@ -59,8 +61,21 @@ export function createMouseoverInspector(options: MouseoverInspectorOptions): {
         if (node.nodeType !== 'Shape' || !node.__dev_hash) {
           return;
         }
+        const canvasRoot = options.getCanvasRoot(node);
+
+        if (!canvasRoot) {
+          return;
+        }
+
+        let point = pointByRoot.get(canvasRoot);
+
+        if (!point) {
+          point = getCanvasRelativePoint(event, canvasRoot);
+          pointByRoot.set(canvasRoot, point);
+        }
+
         const bbox = options.index.getBBox(node.__dev_hash);
-        if (containsPoint(bbox, x, y)) {
+        if (containsPoint(bbox, point.x, point.y)) {
           matches.push(node);
         }
       });
@@ -78,7 +93,7 @@ export function createMouseoverInspector(options: MouseoverInspectorOptions): {
 
     clearOverlay('__hover__');
     removeClickHandler();
-    showOverlay(options.index.getBBox(nextNode.__dev_hash), '__hover__');
+    showOverlay(options.index.getBBox(nextNode.__dev_hash), '__hover__', undefined, options.getCanvasRoot(nextNode));
     clickHandler = () => options.dispatchShapeSelected(nextNode.ancestor as NodeHash, nextNode.__dev_hash as NodeHash);
     window.addEventListener('click', clickHandler);
     lastNode = nextNode;

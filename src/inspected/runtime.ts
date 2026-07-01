@@ -2,6 +2,7 @@ import type { CanvasAttrs, CanvasBBox, CanvasTree, NodeHash, OverlayId } from '.
 import { createKonvaIndex } from './konva-index';
 import type { KonvaLikeNode } from './konva-types';
 import { createMouseoverInspector } from './mouseover-inspector';
+import { getNodeCanvasRoot } from './node-canvas-root';
 import { clearOverlay, showOverlay } from './overlay';
 import './window-contract';
 
@@ -73,9 +74,8 @@ function getUsedHeapSize(targetWindow: Window): number | undefined {
 }
 
 export function installKonvaDevtoolRuntime(targetWindow: Window = window): KonvaDevtoolRuntime {
-  if (targetWindow.__KONVA_DEVTOOL__) {
-    return targetWindow.__KONVA_DEVTOOL__;
-  }
+  targetWindow.__KONVA_DEVTOOL__?.dispose();
+
   const runtimeWindow = targetWindow as RuntimeWindow;
 
   const index = createKonvaIndex({
@@ -87,7 +87,7 @@ export function installKonvaDevtoolRuntime(targetWindow: Window = window): Konva
 
   const mouseoverInspector = createMouseoverInspector({
     index,
-    getCanvasRoot: () => getCanvasRoot(targetWindow),
+    getCanvasRoot: (node) => getNodeCanvasRoot(node, getCanvasRoot(targetWindow)),
     dispatchShapeSelected: (canvasHash, nodeHash) => {
       targetWindow.dispatchEvent(
         new runtimeWindow.CustomEvent('showShape', {
@@ -106,7 +106,10 @@ export function installKonvaDevtoolRuntime(targetWindow: Window = window): Konva
     getAttrs: (hash) => index.getAttrs(hash),
     updateAttr: (hash, name, value) => index.updateAttr(hash, name, value),
     getBBox: (hash) => index.getBBox(hash),
-    showOverlay: (hash, overlayId, color) => showOverlay(index.getBBox(hash), overlayId, color),
+    showOverlay: (hash, overlayId, color) => {
+      const node = index.getNode(hash);
+      showOverlay(index.getBBox(hash), overlayId, color, getNodeCanvasRoot(node, getCanvasRoot(targetWindow)));
+    },
     clearOverlay: (overlayId) => clearOverlay(overlayId),
     setMouseoverInspecting: (enabled) => mouseoverInspector.setEnabled(enabled),
     consoleNode: (hash, label) => index.consoleNode(hash, label),

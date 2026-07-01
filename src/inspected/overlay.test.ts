@@ -22,7 +22,7 @@ describe('overlay', () => {
       transformOrigin: 'top left',
     };
 
-    const style = computeOverlayStyle(bbox, { x: 100, y: 200 }, 'red');
+    const style = computeOverlayStyle(bbox, { x: 100, y: 200 }, { x: 1, y: 1 }, 'red');
 
     expect(style).toMatchObject({
       position: 'absolute',
@@ -33,6 +33,29 @@ describe('overlay', () => {
       background: 'red',
       transform: 'scale(2, 3) rotate(15deg)',
       transformOrigin: 'top left',
+    });
+  });
+
+  it('scales stage coordinates to the rendered canvas size', () => {
+    const style = computeOverlayStyle(
+      {
+        x: 10,
+        y: 20,
+        width: 30,
+        height: 40,
+        rotation: 0,
+        scale: { x: 1, y: 1 },
+      },
+      { x: 100, y: 200 },
+      { x: 0.5, y: 0.25 },
+      'red'
+    );
+
+    expect(style).toMatchObject({
+      left: '105px',
+      top: '205px',
+      width: '15px',
+      height: '10px',
     });
   });
 
@@ -50,6 +73,8 @@ describe('overlay', () => {
       bottom: 106,
       toJSON: () => ({}),
     });
+    Object.defineProperty(root, 'offsetWidth', { value: 200, configurable: true });
+    Object.defineProperty(root, 'offsetHeight', { value: 200, configurable: true });
     document.body.appendChild(root);
 
     showOverlay(
@@ -80,6 +105,8 @@ describe('overlay', () => {
       bottom: 106,
       toJSON: () => ({}),
     });
+    Object.defineProperty(root, 'offsetWidth', { value: 200, configurable: true });
+    Object.defineProperty(root, 'offsetHeight', { value: 200, configurable: true });
     document.body.appendChild(root);
 
     showOverlay(
@@ -88,7 +115,7 @@ describe('overlay', () => {
     );
 
     const overlay = document.querySelector<HTMLElement>('.konva_devtool_rect');
-    expect(overlay?.style.left).toBe('56px');
-    expect(overlay?.style.top).toBe('78px');
+    expect(overlay?.style.left).toBe('55.5px');
+    expect(overlay?.style.top).toBe('77px');
   });
 });

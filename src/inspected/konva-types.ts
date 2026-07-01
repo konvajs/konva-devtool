@@ -13,12 +13,15 @@ export interface KonvaLikeNode {
   getChildren?: () => KonvaLikeNode[];
   getLayers?: () => KonvaLikeNode[];
   getRoot?: () => { getChildren?: () => KonvaLikeNode[] };
+  getStage?: () => { container?: () => Element | null } | undefined;
   get?: (name: string) => unknown;
   getAttrs?: () => CanvasAttrs;
   setAttr?: (name: string, value: unknown) => void;
   getAbsolutePosition?: () => { x: number; y: number };
   getAbsoluteRotation?: () => number;
   getAbsoluteScale?: () => { x: number; y: number };
+  getClientRect?: () => { x?: number; y?: number; width?: number; height?: number };
+  container?: () => Element | null;
   x?: () => number;
   y?: () => number;
   rotation?: () => number;
