@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CanvasTree } from '../shared/types';
-import { buildTreeData, countDescendants } from './tree-model';
+import { buildTreeData, countDescendants, findTreePath } from './tree-model';
 
 describe('tree-model', () => {
   const canvas: CanvasTree = {
@@ -61,5 +61,10 @@ describe('tree-model', () => {
       id: 7,
       count: 0,
     });
+  });
+
+  it('finds the ancestor path for a nested node so the tree can reveal it', () => {
+    expect(findTreePath(canvas, 'rect-1')).toEqual(['canvas-1', 'group-1', 'rect-1']);
+    expect(findTreePath(canvas, 'missing')).toEqual([]);
   });
 });

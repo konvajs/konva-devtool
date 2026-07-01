@@ -18,6 +18,7 @@ interface AppProps {
 
 export default function App({ data: initialData, actions, runtimeEvents }: AppProps): JSX.Element {
   const [selectedNodeHash, setSelectedNodeHash] = useState<NodeHash>('');
+  const [inspectedNodeHash, setInspectedNodeHash] = useState<NodeHash>('');
   const [selectedCanvasHash, setSelectedCanvasHash] = useState<NodeHash>(initialData[0]?.hash ?? '');
   const [mouseoverInspecting, setMouseoverInspectingState] = useState(false);
   const [data, setData] = useState<CanvasTree[]>(initialData);
@@ -43,11 +44,14 @@ export default function App({ data: initialData, actions, runtimeEvents }: AppPr
       }
 
       if (event?.type === 'showShape') {
+        void actions.clearRect('__hover__');
+        void actions.clearRect('__select__');
         setSelectedCanvasHash(event.detail.canvasHash);
+        setInspectedNodeHash(event.detail.nodeHash);
         setSelectedNodeHash(event.detail.nodeHash);
       }
     });
-  }, [runtimeEvents, setMouseoverInspecting]);
+  }, [actions, runtimeEvents, setMouseoverInspecting]);
 
   return (
     <div>
@@ -63,7 +67,12 @@ export default function App({ data: initialData, actions, runtimeEvents }: AppPr
       />
       <div style={{ marginTop: 48, position: 'relative', zIndex: 1 }}>
         {selectedCanvas ? (
-          <CanvasTreeView actions={actions} data={selectedCanvas} selectedNodeHash={selectedNodeHash} />
+          <CanvasTreeView
+            actions={actions}
+            data={selectedCanvas}
+            selectedNodeHash={selectedNodeHash}
+            suppressSelectedOverlayHash={inspectedNodeHash}
+          />
         ) : (
           <Empty />
         )}
