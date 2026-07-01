@@ -5,6 +5,11 @@ export interface CanvasAttrs {
   [key: string]: unknown;
 }
 
+export interface CanvasPoint {
+  x: number;
+  y: number;
+}
+
 export interface CanvasBBox {
   x: number;
   y: number;
@@ -17,6 +22,7 @@ export interface CanvasBBox {
   };
   transform?: string;
   transformOrigin?: string;
+  points?: CanvasPoint[];
 }
 
 export interface CanvasTree {
