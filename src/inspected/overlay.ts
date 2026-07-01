@@ -6,6 +6,9 @@ export interface OverlayVector {
   y: number;
 }
 
+const OVERLAY_COLOR = 'rgba(135, 59, 244, 0.5)';
+const OVERLAY_BORDER_COLOR = 'rgb(135, 59, 244)';
+
 function getCanvasRoot(): Element | null {
   const targetWindow = window as Window & { __canvas_root__?: Element };
   return targetWindow.__canvas_root__ ?? document.querySelector('.konvajs-content');
@@ -41,8 +44,7 @@ function getScaledOverlayPoints(bbox: CanvasBBox, rootOffset: OverlayVector, roo
 export function computeOverlayStyle(
   bbox: CanvasBBox,
   rootOffset: OverlayVector,
-  rootScale: OverlayVector = { x: 1, y: 1 },
-  color = 'rgba(135, 59, 244, 0.5)'
+  rootScale: OverlayVector = { x: 1, y: 1 }
 ): OverlayStyle {
   const scaledPoints = getScaledOverlayPoints(bbox, rootOffset, rootScale);
 
@@ -68,8 +70,8 @@ export function computeOverlayStyle(
     height: `${bbox.height * rootScale.y}px`,
     top: `${bbox.y * rootScale.y + rootOffset.y}px`,
     left: `${bbox.x * rootScale.x + rootOffset.x}px`,
-    background: color,
-    border: '2px dashed rgb(135, 59, 244)',
+    background: OVERLAY_COLOR,
+    border: `2px dashed ${OVERLAY_BORDER_COLOR}`,
     boxSizing: 'border-box',
     zIndex: '2147483647',
     pointerEvents: 'none',
@@ -82,8 +84,7 @@ function createPolygonOverlay(
   bbox: CanvasBBox,
   overlayId: OverlayId,
   rootOffset: OverlayVector,
-  rootScale: OverlayVector,
-  color = 'rgba(135, 59, 244, 0.5)'
+  rootScale: OverlayVector
 ): SVGSVGElement {
   const scaledPoints = getScaledOverlayPoints(bbox, rootOffset, rootScale);
   const bounds = getPointBounds(scaledPoints);
@@ -94,14 +95,14 @@ function createPolygonOverlay(
   svg.classList.add('konva_devtool_rect');
   svg.setAttribute('data-overlay-id', overlayId);
   svg.setAttribute('viewBox', `0 0 ${bounds.width} ${bounds.height}`);
-  Object.assign(svg.style, computeOverlayStyle(bbox, rootOffset, rootScale, color));
+  Object.assign(svg.style, computeOverlayStyle(bbox, rootOffset, rootScale));
 
   polygon.setAttribute('points', localPoints);
-  polygon.setAttribute('stroke', 'rgb(135, 59, 244)');
+  polygon.setAttribute('stroke', OVERLAY_BORDER_COLOR);
   polygon.setAttribute('stroke-width', '2');
   polygon.setAttribute('stroke-dasharray', '6 4');
   polygon.setAttribute('vector-effect', 'non-scaling-stroke');
-  polygon.style.fill = color;
+  polygon.style.fill = OVERLAY_COLOR;
   svg.appendChild(polygon);
 
   return svg;
@@ -118,7 +119,7 @@ export function getRenderedScale(canvasRoot: Element, rect: DOMRect): OverlayVec
   };
 }
 
-export function showOverlay(bbox: CanvasBBox, overlayId: OverlayId, color?: string, root?: Element | null): void {
+export function showOverlay(bbox: CanvasBBox, overlayId: OverlayId, root?: Element | null): void {
   clearOverlay(overlayId);
 
   const canvasRoot = root ?? getCanvasRoot();
@@ -131,7 +132,7 @@ export function showOverlay(bbox: CanvasBBox, overlayId: OverlayId, color?: stri
   const rootScale = getRenderedScale(canvasRoot, rect);
   const rootOffset = { x: rect.x + window.scrollX, y: rect.y + window.scrollY };
   const el = bbox.points?.length
-    ? createPolygonOverlay(bbox, overlayId, rootOffset, rootScale, color)
+    ? createPolygonOverlay(bbox, overlayId, rootOffset, rootScale)
     : document.createElement('div');
 
   if (!bbox.points?.length) {
@@ -139,7 +140,7 @@ export function showOverlay(bbox: CanvasBBox, overlayId: OverlayId, color?: stri
     el.setAttribute('data-overlay-id', overlayId);
     Object.assign(
       el.style,
-      computeOverlayStyle(bbox, rootOffset, rootScale, color)
+      computeOverlayStyle(bbox, rootOffset, rootScale)
     );
   }
   document.body.appendChild(el);

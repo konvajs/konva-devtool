@@ -93,7 +93,7 @@ export function createMouseoverInspector(options: MouseoverInspectorOptions): {
 
     clearOverlay('__hover__');
     removeClickHandler();
-    showOverlay(options.index.getBBox(nextNode.__dev_hash), '__hover__', undefined, options.getCanvasRoot(nextNode));
+    showOverlay(options.index.getBBox(nextNode.__dev_hash), '__hover__', options.getCanvasRoot(nextNode));
     clickHandler = () => options.dispatchShapeSelected(nextNode.ancestor as NodeHash, nextNode.__dev_hash as NodeHash);
     window.addEventListener('click', clickHandler);
     lastNode = nextNode;

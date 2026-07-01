@@ -32,7 +32,7 @@ export interface RuntimeClient {
   getAttrs(hash: NodeHash): Promise<CanvasAttrs | undefined>;
   updateAttr(hash: NodeHash, name: string, value: unknown): Promise<void>;
   getBBox(hash: NodeHash): Promise<CanvasBBox>;
-  showOverlay(hash: NodeHash, overlayId: OverlayId, color?: string): Promise<void>;
+  showOverlay(hash: NodeHash, overlayId: OverlayId): Promise<void>;
   clearOverlay(overlayId?: OverlayId): Promise<void>;
   setMouseoverInspecting(enabled: boolean): Promise<void>;
   consoleNode(hash: NodeHash, label?: string): Promise<void>;
@@ -66,8 +66,8 @@ export function createRuntimeClient(bridge: InspectedPageBridge, loadRuntimeScri
       }
       return bbox;
     }),
-    showOverlay: (hash, overlayId, color) =>
-      executeRuntime<void>(bridge, 'showOverlay', [hash, overlayId, color]).then(() => undefined),
+    showOverlay: (hash, overlayId) =>
+      executeRuntime<void>(bridge, 'showOverlay', [hash, overlayId]).then(() => undefined),
     clearOverlay: (overlayId) => executeRuntime<void>(bridge, 'clearOverlay', [overlayId]).then(() => undefined),
     setMouseoverInspecting: (enabled) =>
       executeRuntime<void>(bridge, 'setMouseoverInspecting', [enabled]).then(() => undefined),

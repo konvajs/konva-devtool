@@ -3,7 +3,7 @@ import type { CanvasAttrs, CanvasTree, NodeHash, OverlayId } from '../shared/typ
 export interface DevtoolActions {
   refreshCanvases(): Promise<CanvasTree[]>;
   checkCanvasAlive(hash: NodeHash): Promise<boolean>;
-  showRect(hash: NodeHash, overlayId: OverlayId, color?: string): Promise<void>;
+  showRect(hash: NodeHash, overlayId: OverlayId): Promise<void>;
   clearRect(overlayId?: OverlayId): Promise<void>;
   getAttrs(hash: NodeHash): Promise<CanvasAttrs | undefined>;
   updateAttr(hash: NodeHash, name: string, value: unknown): Promise<void>;

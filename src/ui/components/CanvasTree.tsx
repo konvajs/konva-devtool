@@ -69,7 +69,7 @@ function CanvasTreeView({ data, actions, selectedNodeHash = '', suppressSelected
       return undefined;
     }
 
-    void actions.showRect(selectedKey, '__select__', 'rgba(29, 57, 196, 0.5)');
+    void actions.showRect(selectedKey, '__select__');
     return () => {
       void actions.clearRect('__select__');
     };
