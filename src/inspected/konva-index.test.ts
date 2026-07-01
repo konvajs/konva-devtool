@@ -14,8 +14,10 @@ function fakeNode(input: {
   rotation?: number;
   scale?: { x: number; y: number };
   size?: { width: number; height: number };
+  exposeGeometryMethods?: boolean;
 }): KonvaLikeNode {
   const attrs = input.attrs ?? {};
+  const exposeGeometryMethods = input.exposeGeometryMethods ?? true;
 
   return {
     _id: input.id,
@@ -33,11 +35,11 @@ function fakeNode(input: {
     setAttr: (name: string, value: unknown) => {
       attrs[name] = value;
     },
-    getAbsolutePosition: () => input.position ?? { x: 0, y: 0 },
-    getAbsoluteRotation: () => input.rotation ?? 0,
-    getAbsoluteScale: () => input.scale ?? { x: 1, y: 1 },
-    width: () => input.size?.width ?? 10,
-    height: () => input.size?.height ?? 20,
+    getAbsolutePosition: exposeGeometryMethods ? () => input.position ?? { x: 0, y: 0 } : undefined,
+    getAbsoluteRotation: exposeGeometryMethods ? () => input.rotation ?? 0 : undefined,
+    getAbsoluteScale: exposeGeometryMethods ? () => input.scale ?? { x: 1, y: 1 } : undefined,
+    width: exposeGeometryMethods ? () => input.size?.width ?? 10 : undefined,
+    height: exposeGeometryMethods ? () => input.size?.height ?? 20 : undefined,
   };
 }
 
@@ -120,6 +122,44 @@ describe('createKonvaIndex', () => {
       rotation: 45,
       scale: { x: 2, y: 3 },
       transform: 'scale(2, 3) rotate(45deg)',
+      transformOrigin: 'top left',
+    });
+  });
+
+  it('falls back to attrs geometry when custom nodes do not expose Konva geometry methods', () => {
+    const effectTextShape = fakeNode({
+      className: 'EffectTextShape',
+      nodeType: 'Shape',
+      attrs: {
+        x: 702.5,
+        y: 52.25,
+        width: 714.75,
+        height: 120,
+        scaleX: 0.46,
+        scaleY: 0.47,
+        rotation: 12,
+      },
+      exposeGeometryMethods: false,
+    });
+    const layer = fakeNode({ className: 'Layer', children: [effectTextShape] });
+    const index = createKonvaIndex({
+      getCanvasInstances: () => [layer],
+      getPerformanceMemory: () => undefined,
+      getFps: () => undefined,
+      log: vi.fn(),
+    });
+
+    const [canvas] = index.refresh();
+    const nodeHash = canvas.children?.[0].hash as string;
+
+    expect(index.getBBox(nodeHash)).toEqual({
+      x: 702.5,
+      y: 52.25,
+      width: 714.75,
+      height: 120,
+      rotation: 12,
+      scale: { x: 0.46, y: 0.47 },
+      transform: 'scale(0.46, 0.47) rotate(12deg)',
       transformOrigin: 'top left',
     });
   });
