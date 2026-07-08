@@ -2,7 +2,7 @@ import type { CanvasAttrs, CanvasBBox, CanvasTree, NodeHash, OverlayId } from '.
 import { createKonvaIndex } from './konva-index';
 import type { KonvaLikeNode } from './konva-types';
 import { createMouseoverInspector } from './mouseover-inspector';
-import { getNodeCanvasRoot } from './node-canvas-root';
+import { getCanvasRoot, getNodeCanvasRoot } from './node-canvas-root';
 import { clearOverlay, showOverlay } from './overlay';
 import './window-contract';
 
@@ -60,10 +60,6 @@ function discoverCanvasInstances(targetWindow: Window): KonvaLikeNode[] {
   return layers;
 }
 
-function getCanvasRoot(targetWindow: Window): Element | null {
-  return targetWindow.__canvas_root__ ?? targetWindow.document.querySelector('.konvajs-content');
-}
-
 function getUsedHeapSize(targetWindow: Window): number | undefined {
   const performanceWithMemory = targetWindow.performance as Performance & {
     memory?: {
@@ -87,7 +83,7 @@ export function installKonvaDevtoolRuntime(targetWindow: Window = window): Konva
 
   const mouseoverInspector = createMouseoverInspector({
     index,
-    getCanvasRoot: (node) => getNodeCanvasRoot(node, getCanvasRoot(targetWindow)),
+    getCanvasRoot: (node) => getNodeCanvasRoot(node) ?? getCanvasRoot(targetWindow),
     dispatchShapeSelected: (canvasHash, nodeHash) => {
       targetWindow.dispatchEvent(
         new runtimeWindow.CustomEvent('showShape', {
@@ -108,7 +104,7 @@ export function installKonvaDevtoolRuntime(targetWindow: Window = window): Konva
     getBBox: (hash) => index.getBBox(hash),
     showOverlay: (hash, overlayId) => {
       const node = index.getNode(hash);
-      showOverlay(index.getBBox(hash), overlayId, getNodeCanvasRoot(node, getCanvasRoot(targetWindow)));
+      showOverlay(index.getBBox(hash), overlayId, getNodeCanvasRoot(node) ?? getCanvasRoot(targetWindow));
     },
     clearOverlay: (overlayId) => clearOverlay(overlayId),
     setMouseoverInspecting: (enabled) => mouseoverInspector.setEnabled(enabled),

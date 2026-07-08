@@ -1,4 +1,5 @@
 import type { CanvasBBox, CanvasPoint, OverlayId } from '../shared/types';
+import { getCanvasRoot } from './node-canvas-root';
 
 export type OverlayStyle = Record<string, string>;
 export interface OverlayVector {
@@ -8,11 +9,6 @@ export interface OverlayVector {
 
 const OVERLAY_COLOR = 'rgba(135, 59, 244, 0.5)';
 const OVERLAY_BORDER_COLOR = 'rgb(135, 59, 244)';
-
-function getCanvasRoot(): Element | null {
-  const targetWindow = window as Window & { __canvas_root__?: Element };
-  return targetWindow.__canvas_root__ ?? document.querySelector('.konvajs-content');
-}
 
 function scalePoint(point: CanvasPoint, rootOffset: OverlayVector, rootScale: OverlayVector): CanvasPoint {
   return {
