@@ -18,11 +18,12 @@ export interface KonvaLikeNode {
   hash?: NodeHash;
   __dev_hash?: NodeHash;
   ancestor?: NodeHash;
+  parent?: KonvaLikeNode | null;
   visible?: () => boolean;
   hasChildren?: () => boolean;
   getChildren?: () => KonvaLikeNode[];
   getLayers?: () => KonvaLikeNode[];
-  getRoot?: () => { getChildren?: () => KonvaLikeNode[] };
+  getRoot?: () => KonvaLikeNode | undefined;
   getStage?: () => { container?: () => KonvaContainer | null } | undefined;
   get?: (name: string) => unknown;
   getAttrs?: () => CanvasAttrs;
