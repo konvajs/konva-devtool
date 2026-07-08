@@ -112,6 +112,45 @@ describe('createKonvaIndex', () => {
     });
   });
 
+  it('ignores stale child references after a reused node moves to another parent', () => {
+    const shape = fakeNode({
+      className: 'Rect',
+      nodeType: 'Shape',
+      id: 11,
+      attrs: { name: 'moved-shape' },
+    });
+    const staleGroup = fakeNode({
+      className: 'Group',
+      attrs: { name: 'stale-parent' },
+      children: [shape],
+    });
+    const currentGroup = fakeNode({
+      className: 'Group',
+      attrs: { name: 'current-parent' },
+      children: [shape],
+    });
+    shape.parent = currentGroup;
+    const layer = fakeNode({
+      className: 'Layer',
+      children: [staleGroup, currentGroup],
+    });
+    const index = createKonvaIndex({
+      getCanvasInstances: () => [layer],
+      getPerformanceMemory: () => undefined,
+      getFps: () => undefined,
+      log: vi.fn(),
+    });
+
+    const [canvas] = index.refresh();
+
+    expect(canvas.children?.[0].children).toBeUndefined();
+    expect(canvas.children?.[1].children).toHaveLength(1);
+    expect(canvas.children?.[1].children?.[0]).toMatchObject({
+      id: 11,
+      attrs: { name: 'moved-shape' },
+    });
+  });
+
   it('reads attrs, updates attrs, checks canvas life, and computes bbox', () => {
     const shape = fakeNode({
       className: 'Rect',

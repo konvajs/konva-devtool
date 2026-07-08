@@ -21,19 +21,31 @@ function getNodeHash(node: KonvaLikeNode): NodeHash {
   return node.__dev_hash;
 }
 
+function isCurrentChild(parent: KonvaLikeNode, child: KonvaLikeNode): boolean {
+  return child.parent === undefined || child.parent === parent;
+}
+
+function getVisibleCurrentChildren(parent: KonvaLikeNode, children: KonvaLikeNode[]): KonvaLikeNode[] {
+  return children.filter((child) => (child.visible?.() ?? true) && isCurrentChild(parent, child));
+}
+
 function getCanvasRootChildren(canvas: KonvaLikeNode): KonvaLikeNode[] {
   const root = canvas.getRoot?.();
   const rootChildren = root?.getChildren?.();
 
-  if (rootChildren) {
-    return rootChildren.filter((child) => child.visible?.() ?? true);
+  if (root && rootChildren) {
+    return getVisibleCurrentChildren(root, rootChildren);
   }
 
-  return (canvas.getChildren?.() ?? []).filter((child) => child.visible?.() ?? true);
+  return getVisibleCurrentChildren(canvas, canvas.getChildren?.() ?? []);
 }
 
 function getVisibleChildren(node: KonvaLikeNode): KonvaLikeNode[] {
-  return (node.getChildren?.() ?? []).filter((child) => child.visible?.() ?? true);
+  return getVisibleCurrentChildren(node, node.getChildren?.() ?? []);
+}
+
+function isCanvasTree(tree: CanvasTree | undefined): tree is CanvasTree {
+  return Boolean(tree);
 }
 
 function getNumber(value: unknown): number | undefined {
@@ -166,12 +178,20 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
   let globalMap: Record<NodeHash, KonvaLikeNode> = {};
   let canvases: KonvaLikeNode[] = [];
 
-  function serializeNode(node: KonvaLikeNode, canvasHash: NodeHash): CanvasTree {
+  function serializeNode(node: KonvaLikeNode, canvasHash: NodeHash, visited: WeakSet<KonvaLikeNode>): CanvasTree | undefined {
+    if (visited.has(node)) {
+      return undefined;
+    }
+
+    visited.add(node);
+
     const hash = getNodeHash(node);
     node.ancestor = canvasHash;
     globalMap[hash] = node;
 
-    const children = getVisibleChildren(node).map((child) => serializeNode(child, canvasHash));
+    const children = getVisibleChildren(node)
+      .map((child) => serializeNode(child, canvasHash, visited))
+      .filter(isCanvasTree);
     const attrs = getSerializableAttrs(node);
     const type = node.className ?? node.nodeType ?? 'group';
 
@@ -191,6 +211,7 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
     canvases = env.getCanvasInstances();
 
     return canvases.map((canvas) => {
+      const visited = new WeakSet<KonvaLikeNode>();
       const hash = canvas.hash ?? createHash('canvas');
       canvas.hash = hash;
       globalMap[hash] = canvas;
@@ -200,7 +221,9 @@ export function createKonvaIndex(env: KonvaIndexEnvironment): KonvaIndex {
         name: 'renderer',
         nodeType: 'renderer',
         hash,
-        children: getCanvasRootChildren(canvas).map((child) => serializeNode(child, hash)),
+        children: getCanvasRootChildren(canvas)
+          .map((child) => serializeNode(child, hash, visited))
+          .filter(isCanvasTree),
         memory: env.getPerformanceMemory(),
         fps: env.getFps(),
       };
