@@ -88,6 +88,37 @@ describe('overlay', () => {
     expect(document.querySelectorAll('.konva_devtool_rect')).toHaveLength(0);
   });
 
+  it('finds a Konva content root inside an open shadow root', () => {
+    const host = document.createElement('div');
+    const shadowRoot = host.attachShadow({ mode: 'open' });
+    const root = document.createElement('div');
+    root.className = 'konvajs-content';
+    root.getBoundingClientRect = () => ({
+      x: 25,
+      y: 35,
+      width: 100,
+      height: 100,
+      top: 35,
+      left: 25,
+      right: 125,
+      bottom: 135,
+      toJSON: () => ({}),
+    });
+    Object.defineProperty(root, 'offsetWidth', { value: 100, configurable: true });
+    Object.defineProperty(root, 'offsetHeight', { value: 100, configurable: true });
+    shadowRoot.appendChild(root);
+    document.body.appendChild(host);
+
+    showOverlay(
+      { x: 1, y: 2, width: 3, height: 4, rotation: 0, scale: { x: 1, y: 1 } },
+      '__hover__'
+    );
+
+    const overlay = document.querySelector<HTMLElement>('.konva_devtool_rect');
+    expect(overlay?.style.left).toBe('26px');
+    expect(overlay?.style.top).toBe('37px');
+  });
+
   it('draws oriented overlays as polygons instead of axis-aligned divs', () => {
     const root = document.createElement('div');
     root.className = 'konvajs-content';

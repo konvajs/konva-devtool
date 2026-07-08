@@ -1,5 +1,7 @@
 import type { CanvasAttrs, CanvasPoint, NodeHash } from '../shared/types';
 
+export type KonvaContainer = Element | ShadowRoot;
+
 export interface KonvaClientRectConfig {
   skipTransform?: boolean;
 }
@@ -21,7 +23,7 @@ export interface KonvaLikeNode {
   getChildren?: () => KonvaLikeNode[];
   getLayers?: () => KonvaLikeNode[];
   getRoot?: () => { getChildren?: () => KonvaLikeNode[] };
-  getStage?: () => { container?: () => Element | null } | undefined;
+  getStage?: () => { container?: () => KonvaContainer | null } | undefined;
   get?: (name: string) => unknown;
   getAttrs?: () => CanvasAttrs;
   setAttr?: (name: string, value: unknown) => void;
@@ -30,7 +32,7 @@ export interface KonvaLikeNode {
   getAbsoluteScale?: () => { x: number; y: number };
   getAbsoluteTransform?: () => KonvaTransform;
   getClientRect?: (config?: KonvaClientRectConfig) => { x?: number; y?: number; width?: number; height?: number } | undefined;
-  container?: () => Element | null;
+  container?: () => KonvaContainer | null;
   x?: () => number;
   y?: () => number;
   rotation?: () => number;

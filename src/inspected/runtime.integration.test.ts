@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { KonvaLikeNode } from './konva-types';
+import type { KonvaContainer, KonvaLikeNode } from './konva-types';
 import { installKonvaDevtoolRuntime } from './runtime';
 
 interface FakeNodeOptions {
@@ -10,7 +10,7 @@ interface FakeNodeOptions {
   children?: MutableFakeNode[];
   position?: { x: number; y: number };
   size?: { width: number; height: number };
-  stage?: { container?: () => Element | null };
+  stage?: { container?: () => KonvaContainer | null };
 }
 
 type MutableFakeNode = KonvaLikeNode & {
@@ -63,6 +63,28 @@ function createCanvasRoot(rect: { x: number; y: number; width: number; height: n
   return root;
 }
 
+function createShadowCanvasRoot(rect: { x: number; y: number; width: number; height: number }): ShadowRoot {
+  const host = document.createElement('div');
+  const shadowRoot = host.attachShadow({ mode: 'open' });
+  const root = document.createElement('div');
+  root.className = 'konvajs-content';
+  root.getBoundingClientRect = () =>
+    ({
+      x: rect.x,
+      y: rect.y,
+      top: rect.y,
+      left: rect.x,
+      right: rect.x + rect.width,
+      bottom: rect.y + rect.height,
+      width: rect.width,
+      height: rect.height,
+      toJSON: () => undefined,
+    }) as DOMRect;
+  shadowRoot.appendChild(root);
+  document.body.appendChild(host);
+  return shadowRoot;
+}
+
 function installCanvasRoot(): HTMLElement {
   const root = createCanvasRoot({ x: 10, y: 20, width: 200, height: 200 });
   window.__canvas_root__ = root;
@@ -76,7 +98,7 @@ function createStageContainer(root: Element): HTMLElement {
   return container;
 }
 
-function installFakeCanvas(stageContainer?: Element): { canvas: MutableFakeNode; layer: MutableFakeNode; shape: MutableFakeNode } {
+function installFakeCanvas(stageContainer?: KonvaContainer): { canvas: MutableFakeNode; layer: MutableFakeNode; shape: MutableFakeNode } {
   const stage = stageContainer ? { container: () => stageContainer } : undefined;
   const shape = createFakeNode({
     className: 'Rect',
@@ -166,6 +188,22 @@ describe('Konva inspected runtime integration', () => {
     expect(overlay?.style.left).toBe('105px');
     expect(overlay?.style.top).toBe('206px');
     expect(shape.getStage?.()?.container?.()).toBe(stageContainer);
+  });
+
+  it('positions overlays against a Konva stage mounted in an open shadow root', () => {
+    installCanvasRoot();
+    const shadowRoot = createShadowCanvasRoot({ x: 100, y: 200, width: 200, height: 200 });
+    const { shape } = installFakeCanvas(shadowRoot);
+    const runtime = installKonvaDevtoolRuntime(window);
+    const [canvasTree] = runtime.refresh();
+    const shapeHash = canvasTree.children?.[0]?.children?.[0]?.hash;
+
+    runtime.showOverlay(shapeHash ?? '', '__select__');
+
+    const overlay = document.querySelector<HTMLElement>('.konva_devtool_rect[data-overlay-id="__select__"]');
+    expect(overlay?.style.left).toBe('105px');
+    expect(overlay?.style.top).toBe('206px');
+    expect(shape.getStage?.()?.container?.()).toBe(shadowRoot);
   });
 
   it('selects a hovered shape once and removes listeners when mouseover inspection is disabled', () => {
